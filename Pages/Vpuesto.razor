@@ -1,0 +1,123 @@
+@page "/v_puesto"
+@using AppEmpresa.Data
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory ClientFactory
+
+<h1>Formulario de Puestos</h1>
+
+@if (getPuestoError || ipuesto is null)
+{
+    <p>No se encontro la Api.</p>
+}
+else
+{
+    <form> 
+    <label for="lbl_id" class="form-label">ID</label>
+    <input @bind= "var_idpuesto" type="text" class="form-control" placeholder="ID" >
+    <label for="lbl_puesto" class="form-label">puesto</label>
+    <input @bind= "var_puestos" type="text" class="form-control" placeholder="Ejemplo: Nombre de plaza">
+    <br>
+    <button type="button" @onclick="Crear"  class="btn btn-info">Crear</button>
+    <button type="button" @onclick="Actualizar" class="btn btn-success">Modificar</button>
+    <button type="button" @onclick="Eliminar" class="btn btn-danger">Eliminar</button>
+
+    </form> 
+
+    <table class= "table" >
+        <tbody>
+            <tr>
+                <th></th>
+                <th>Puesto</th>
+            </tr> 
+
+        </tbody>
+        @foreach (var puesto in ipuesto)
+        {
+            <tr>
+            <td><button type="button" @onclick="(() => enviarParametros(puesto.Idpuesto,puesto.Puestos))" class="btn btn-info"><i class="oi oi-pencil"></i></button></td>
+            <td>@puesto.Puestos</td>
+            </tr>
+        }
+    </table>
+}
+
+@code {
+
+private string? url = "https://localhost:7154/api/Puestos";
+
+private Int16 var_idpuesto;
+
+private string? var_puestos;
+
+//Enviar parametros a variables locales 
+
+void enviarParametros(Int16 id,string? puesto){
+    var_idpuesto = id;
+    var_puestos = puesto;
+
+}
+
+//CREAR
+
+  private async Task Crear()
+    {
+        var client = ClientFactory.CreateClient();
+        var addItem = new Puesto { Idpuesto = var_idpuesto, Puestos = var_puestos};
+        await client.PostAsJsonAsync(url, addItem);
+        await OnInitializedAsync();
+    }
+
+//ACTUALIZAR
+
+  private async Task Actualizar()
+    {
+        var client = ClientFactory.CreateClient();
+        var addItem = new Puesto { Idpuesto = var_idpuesto, Puestos = var_puestos};
+        await client.PutAsJsonAsync($"{url}/{var_idpuesto}", addItem);
+        await OnInitializedAsync();
+    }
+
+//ELIMINAR
+
+  private async Task Eliminar()
+    {
+        var client = ClientFactory.CreateClient();
+        var addItem = new Puesto { Idpuesto = var_idpuesto, Puestos = var_puestos};
+        await client.DeleteAsync($"{url}/{var_idpuesto}");
+        await OnInitializedAsync();
+    }
+
+    private IEnumerable<Puesto>? ipuesto = Array.Empty<Puesto>();
+    private bool getPuestoError;
+    private bool shouldRender;
+
+    protected override bool ShouldRender() => shouldRender;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get,
+            "https://localhost:7154/api/Puestos");
+        request.Headers.Add("Accept", "application/vnd.github.v3+json");
+        request.Headers.Add("User-Agent", "HttpClientFactory-Sample");
+
+        var client = ClientFactory.CreateClient();
+
+        var response = await client.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            using var responseStream = await response.Content.ReadAsStreamAsync();
+            ipuesto = await JsonSerializer.DeserializeAsync
+                <IEnumerable<Puesto>>(responseStream);
+        }
+        else
+        {
+            getPuestoError = true;
+        }
+
+        shouldRender = true;
+    }
+
+
+}
